@@ -1,0 +1,251 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Metrics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            background: #2b3a42;
+            color: white;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .metrics-cards {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            flex: 1;
+            margin: 0 10px;
+            text-align: center;
+            min-width: 150px;
+        }
+        .card h3 { margin: 0 0 10px 0; color: #777; font-size: 14px; text-transform: uppercase; }
+        .card p { margin: 0; font-size: 28px; font-weight: bold; color: #2b3a42; }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .confusion-matrix table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .confusion-matrix th, .confusion-matrix td {
+            padding: 15px;
+            border: 1px solid #ddd;
+        }
+        .confusion-matrix th { background: #f8f9fa; }
+        /* heatmap colors placeholder */
+        .h-low { background: rgba(54, 162, 235, 0.2); }
+        .h-med { background: rgba(54, 162, 235, 0.5); }
+        .h-high { background: rgba(54, 162, 235, 0.8); color: white; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Mental Health Predictor - ML Metrics Report</h1>
+        <p>Comprehensive overview of model performance and evaluation graphs</p>
+    </div>
+
+    <div class="metrics-cards">
+        <div class="card">
+            <h3>Test Accuracy</h3>
+            <p>89.86%</p>
+        </div>
+        <div class="card">
+            <h3>R² Score</h3>
+            <p>0.6964</p>
+        </div>
+        <div class="card">
+            <h3>Mean Abs. Error (MAE)</h3>
+            <p>0.1208</p>
+        </div>
+        <div class="card">
+            <h3>Mean Sqr. Error (MSE)</h3>
+            <p>0.0238</p>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="chart-container">
+            <h2>1. Training Loss Curve (MSE & MAE)</h2>
+            <p style="font-size:12px; color:#666;">Shows how the model learned over epochs.</p>
+            <canvas id="lossChart"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <h2>2. Actual vs Predicted Stress Levels</h2>
+            <p style="font-size:12px; color:#666;">Comparing the model predictions against true risk labels.</p>
+            <canvas id="accuracyChart"></canvas>
+        </div>
+
+        <div class="chart-container confusion-matrix">
+            <h2>3. Confusion Matrix</h2>
+            <p style="font-size:12px; color:#666;">Matrix displaying True Positives, False Positives, etc.</p>
+            <table id="cmTable">
+                <tr>
+                    <th></th>
+                    <th>Predicted Low (0)</th>
+                    <th>Predicted Medium (1)</th>
+                    <th>Predicted High (2)</th>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="chart-container">
+            <h2>4. Error Distribution (Residuals)</h2>
+            <p style="font-size:12px; color:#666;">Shows the frequency of prediction error magnitudes.</p>
+            <canvas id="residualChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // Data From Python
+        const trainingHistory = {"loss": [0.08036357909440994, 0.07876860350370407, 0.07905988395214081, 0.07899031788110733, 0.07828693836927414, 0.07933252304792404, 0.07881829887628555, 0.0789935365319252, 0.07899187505245209, 0.07855752855539322, 0.07876024395227432, 0.07834958285093307, 0.07846914976835251, 0.07832090556621552, 0.07816337049007416, 0.07864804565906525, 0.07815686613321304, 0.07807131856679916, 0.07819745689630508, 0.07835005968809128, 0.07783253490924835, 0.0781363919377327, 0.07721394300460815, 0.07746224850416183, 0.07673241198062897, 0.07661645114421844, 0.07428819686174393, 0.07633963972330093, 0.07482857257127762, 0.07146237790584564, 0.07393193244934082, 0.07227369397878647, 0.07137365639209747, 0.06852519512176514, 0.07118228822946548, 0.07058602571487427, 0.06488678604364395, 0.062137480825185776, 0.0638413205742836, 0.05757250636816025, 0.05709880590438843, 0.053836312144994736, 0.04826967045664787, 0.04635123535990715, 0.042379166930913925, 0.035730309784412384, 0.03319542482495308, 0.0314285010099411], "mae": [0.18442881107330322, 0.1821603775024414, 0.1864633560180664, 0.18298812210559845, 0.1816692352294922, 0.1840602308511734, 0.18705777823925018, 0.18070918321609497, 0.18104897439479828, 0.18149296939373016, 0.18454097211360931, 0.17620794475078583, 0.18214882910251617, 0.18877442181110382, 0.1870899796485901, 0.17921370267868042, 0.1887093037366867, 0.17938528954982758, 0.18344074487686157, 0.17991414666175842, 0.18682993948459625, 0.18302959203720093, 0.18351493775844574, 0.1824389398097992, 0.18226854503154755, 0.18622249364852905, 0.18322491645812988, 0.18678519129753113, 0.18375802040100098, 0.1791452020406723, 0.19107183814048767, 0.18279403448104858, 0.19288776814937592, 0.1849757432937622, 0.18762703239917755, 0.1913752257823944, 0.18283547461032867, 0.1868986040353775, 0.1879052072763443, 0.17994000017642975, 0.18524548411369324, 0.17674311995506287, 0.17149759829044342, 0.16732996702194214, 0.16078287363052368, 0.14931824803352356, 0.14435166120529175, 0.14055991172790527]};
+        const accuracyData = [{"time_index": 1, "actual": 1.0, "predicted": 0.722949743270874}, {"time_index": 2, "actual": 0.5, "predicted": 0.7289718389511108}, {"time_index": 3, "actual": 0.5, "predicted": 0.47520479559898376}, {"time_index": 4, "actual": 0.0, "predicted": 0.27173298597335815}, {"time_index": 5, "actual": 0.5, "predicted": 0.695660412311554}, {"time_index": 6, "actual": 0.5, "predicted": 0.47430419921875}, {"time_index": 7, "actual": 1.0, "predicted": 0.8075910210609436}, {"time_index": 8, "actual": 0.5, "predicted": 0.45930248498916626}, {"time_index": 9, "actual": 0.5, "predicted": 0.4412928521633148}, {"time_index": 10, "actual": 0.5, "predicted": 0.5138388872146606}, {"time_index": 11, "actual": 0.5, "predicted": 0.5828295946121216}, {"time_index": 12, "actual": 1.0, "predicted": 0.8389884233474731}, {"time_index": 13, "actual": 0.5, "predicted": 0.1467258185148239}, {"time_index": 14, "actual": 0.5, "predicted": 0.5005865097045898}, {"time_index": 15, "actual": 0.5, "predicted": 0.3511567711830139}, {"time_index": 16, "actual": 0.5, "predicted": 0.43145468831062317}, {"time_index": 17, "actual": 0.5, "predicted": 0.6370915174484253}, {"time_index": 18, "actual": 0.5, "predicted": 0.5757294297218323}, {"time_index": 19, "actual": 0.5, "predicted": 0.4349857270717621}, {"time_index": 20, "actual": 0.5, "predicted": 0.37782278656959534}, {"time_index": 21, "actual": 0.0, "predicted": 0.2251296490430832}, {"time_index": 22, "actual": 0.5, "predicted": 0.5804579257965088}, {"time_index": 23, "actual": 0.5, "predicted": 0.49420881271362305}, {"time_index": 24, "actual": 0.5, "predicted": 0.5438616275787354}, {"time_index": 25, "actual": 1.0, "predicted": 0.7488803863525391}, {"time_index": 26, "actual": 0.5, "predicted": 0.48407694697380066}, {"time_index": 27, "actual": 0.5, "predicted": 0.5127582550048828}, {"time_index": 28, "actual": 0.5, "predicted": 0.29354602098464966}, {"time_index": 29, "actual": 1.0, "predicted": 0.7787429094314575}, {"time_index": 30, "actual": 0.5, "predicted": 0.4116184711456299}, {"time_index": 31, "actual": 1.0, "predicted": 0.8210105895996094}, {"time_index": 32, "actual": 0.5, "predicted": 0.34038686752319336}, {"time_index": 33, "actual": 0.5, "predicted": 0.36369919776916504}, {"time_index": 34, "actual": 1.0, "predicted": 0.8735496997833252}, {"time_index": 35, "actual": 1.0, "predicted": 0.8151031732559204}, {"time_index": 36, "actual": 0.0, "predicted": 0.09388720244169235}, {"time_index": 37, "actual": 0.5, "predicted": 0.37907207012176514}, {"time_index": 38, "actual": 0.5, "predicted": 0.4444882869720459}, {"time_index": 39, "actual": 0.5, "predicted": 0.3920636773109436}, {"time_index": 40, "actual": 0.5, "predicted": 0.44884923100471497}, {"time_index": 41, "actual": 0.5, "predicted": 0.611648678779602}, {"time_index": 42, "actual": 0.5, "predicted": 0.5576808452606201}, {"time_index": 43, "actual": 0.5, "predicted": 0.4441812336444855}, {"time_index": 44, "actual": 0.5, "predicted": 0.3322140872478485}, {"time_index": 45, "actual": 0.5, "predicted": 0.4482702314853668}, {"time_index": 46, "actual": 0.5, "predicted": 0.39767986536026}, {"time_index": 47, "actual": 0.5, "predicted": 0.5275166034698486}, {"time_index": 48, "actual": 0.5, "predicted": 0.6468469500541687}, {"time_index": 49, "actual": 0.0, "predicted": 0.08514317125082016}, {"time_index": 50, "actual": 0.5, "predicted": 0.33885306119918823}, {"time_index": 51, "actual": 0.5, "predicted": 0.49991586804389954}, {"time_index": 52, "actual": 0.5, "predicted": 0.38529616594314575}, {"time_index": 53, "actual": 0.0, "predicted": 0.24630624055862427}, {"time_index": 54, "actual": 0.5, "predicted": 0.48945924639701843}, {"time_index": 55, "actual": 1.0, "predicted": 0.7174344062805176}, {"time_index": 56, "actual": 1.0, "predicted": 0.7715256214141846}, {"time_index": 57, "actual": 1.0, "predicted": 0.8613226413726807}, {"time_index": 58, "actual": 0.0, "predicted": 0.036296550184488297}, {"time_index": 59, "actual": 1.0, "predicted": 0.47425466775894165}, {"time_index": 60, "actual": 0.5, "predicted": 0.5219091176986694}, {"time_index": 61, "actual": 0.0, "predicted": 0.24441367387771606}, {"time_index": 62, "actual": 0.0, "predicted": 0.1284949779510498}, {"time_index": 63, "actual": 0.5, "predicted": 0.4344954490661621}, {"time_index": 64, "actual": 0.5, "predicted": 0.5614131689071655}, {"time_index": 65, "actual": 0.5, "predicted": 0.5982850790023804}, {"time_index": 66, "actual": 0.5, "predicted": 0.5063357353210449}, {"time_index": 67, "actual": 0.5, "predicted": 0.39631330966949463}, {"time_index": 68, "actual": 0.5, "predicted": 0.31015968322753906}, {"time_index": 69, "actual": 0.5, "predicted": 0.406239777803421}, {"time_index": 70, "actual": 0.5, "predicted": 0.45068979263305664}, {"time_index": 71, "actual": 0.5, "predicted": 0.3733413815498352}, {"time_index": 72, "actual": 1.0, "predicted": 0.842282235622406}, {"time_index": 73, "actual": 0.0, "predicted": 0.10000190138816833}, {"time_index": 74, "actual": 0.5, "predicted": 0.46824175119400024}, {"time_index": 75, "actual": 0.5, "predicted": 0.4506312310695648}, {"time_index": 76, "actual": 0.5, "predicted": 0.35692963004112244}, {"time_index": 77, "actual": 0.5, "predicted": 0.5892587900161743}, {"time_index": 78, "actual": 1.0, "predicted": 0.9655882716178894}, {"time_index": 79, "actual": 1.0, "predicted": 0.955359935760498}, {"time_index": 80, "actual": 0.5, "predicted": 0.5304162502288818}, {"time_index": 81, "actual": 0.5, "predicted": 0.5796802043914795}, {"time_index": 82, "actual": 0.5, "predicted": 0.43451282382011414}, {"time_index": 83, "actual": 0.5, "predicted": 0.5209044218063354}, {"time_index": 84, "actual": 1.0, "predicted": 0.8060532212257385}, {"time_index": 85, "actual": 0.0, "predicted": 0.09325750172138214}, {"time_index": 86, "actual": 1.0, "predicted": 0.8302602767944336}, {"time_index": 87, "actual": 0.5, "predicted": 0.7254546880722046}, {"time_index": 88, "actual": 0.5, "predicted": 0.6184051036834717}, {"time_index": 89, "actual": 1.0, "predicted": 0.7652493715286255}, {"time_index": 90, "actual": 0.5, "predicted": 0.42650583386421204}, {"time_index": 91, "actual": 1.0, "predicted": 0.6628409624099731}, {"time_index": 92, "actual": 0.5, "predicted": 0.4197408854961395}, {"time_index": 93, "actual": 0.5, "predicted": 0.25054171681404114}, {"time_index": 94, "actual": 1.0, "predicted": 0.7089951038360596}, {"time_index": 95, "actual": 0.5, "predicted": 0.6983187198638916}, {"time_index": 96, "actual": 0.5, "predicted": 0.4676447808742523}, {"time_index": 97, "actual": 0.5, "predicted": 0.367762953042984}, {"time_index": 98, "actual": 1.0, "predicted": 0.8582042455673218}, {"time_index": 99, "actual": 0.5, "predicted": 0.3191905617713928}, {"time_index": 100, "actual": 1.0, "predicted": 0.9559276700019836}];
+        const confusionMatrix = [[50, 9, 0], [6, 327, 2], [0, 33, 66]];
+
+        // 1. Loss Curve Chart
+        const epochs = Array.from({length: trainingHistory.loss ? trainingHistory.loss.length : 0}, (_, i) => i + 1);
+        new Chart(document.getElementById('lossChart'), {
+            type: 'line',
+            data: {
+                labels: epochs,
+                datasets: [
+                    {
+                        label: 'Training Loss (MSE)',
+                        data: trainingHistory.loss,
+                        borderColor: '#ff6384',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Training MAE',
+                        data: trainingHistory.mae,
+                        borderColor: '#36a2eb',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+
+        // 2. Actual vs Predicted Chart
+        const labels = accuracyData.map(d => d.time_index);
+        const actuals = accuracyData.map(d => d.actual);
+        const predictions = accuracyData.map(d => d.predicted);
+        
+        new Chart(document.getElementById('accuracyChart'), {
+            type: 'line',
+            data: {
+                labels: Object.keys(labels).length > 0 ? labels.slice(0, 50) : [],
+                datasets: [
+                    {
+                        label: 'Actual Stress Risk (Scaled)',
+                        data: actuals.slice(0, 50),
+                        borderColor: '#4bc0c0',
+                        backgroundColor: '#4bc0c0',
+                        pointRadius: 4,
+                        showLine: false
+                    },
+                    {
+                        label: 'Predicted Stress Risk',
+                        data: predictions.slice(0, 50),
+                        borderColor: '#ff9f40',
+                        backgroundColor: '#ff9f40',
+                        pointRadius: 4,
+                        pointStyle: 'crossRot',
+                        showLine: false
+                    }
+                ]
+            },
+            options: { responsive: true }
+        });
+
+        // 3. Render Confusion Matrix Table
+        const cmTable = document.getElementById('cmTable');
+        const trueLabels = ["Actual Low (0)", "Actual Medium (1)", "Actual High (2)"];
+        let maxVal = 0;
+        confusionMatrix.forEach(r => r.forEach(v => { if(v > maxVal) maxVal = v; }));
+        
+        confusionMatrix.forEach((row, i) => {
+            const tr = document.createElement('tr');
+            const th = document.createElement('th');
+            th.innerText = trueLabels[i];
+            tr.appendChild(th);
+            
+            row.forEach(val => {
+                const td = document.createElement('td');
+                td.innerText = val;
+                // Heatmap logic
+                let ratio = val / (maxVal || 1);
+                if(ratio > 0.66) td.className = 'h-high';
+                else if(ratio > 0.33) td.className = 'h-med';
+                else if(ratio > 0) td.className = 'h-low';
+                
+                tr.appendChild(td);
+            });
+            cmTable.appendChild(tr);
+        });
+
+        // 4. Residuals/Error Histogram
+        const residuals = actuals.map((act, i) => act - predictions[i]);
+        const bins = [-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1];
+        const counts = new Array(bins.length-1).fill(0);
+        
+        residuals.forEach(r => {
+            for(let i=0; i<bins.length-1; i++){
+                if(r >= bins[i] && r < bins[i+1]) {
+                    counts[i]++;
+                    break;
+                }
+            }
+        });
+
+        new Chart(document.getElementById('residualChart'), {
+            type: 'bar',
+            data: {
+                labels: ['-1 to -0.75', '-0.75 to -0.5', '-0.5 to -0.25', '-0.25 to 0', '0 to 0.25', '0.25 to 0.5', '0.5 to 0.75', '0.75 to 1'],
+                datasets: [{
+                    label: 'Error Frequency',
+                    data: counts,
+                    backgroundColor: '#9966ff',
+                }]
+            },
+            options: { responsive: true }
+        });
+    </script>
+</body>
+</html>

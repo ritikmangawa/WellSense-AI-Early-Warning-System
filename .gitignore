@@ -1,0 +1,62 @@
+# ========================
+# SECRETS - NEVER COMMIT
+# ========================
+.env
+*.env
+.env.*
+
+# ========================
+# Python Virtual Environment
+# ========================
+env/
+venv/
+.venv/
+
+# ========================
+# Python Cache
+# ========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# ========================
+# Trained AI Model (large binary file)
+# Upload manually or use Git LFS
+# ========================
+*.h5
+*.pkl
+*.npy
+*.joblib
+model/
+
+# ========================
+# Jupyter Notebooks Checkpoints
+# ========================
+.ipynb_checkpoints/
+
+# ========================
+# Node / React / Vite
+# ========================
+node_modules/
+dist/
+.vite/
+*.local
+
+# ========================
+# Generated Metrics & Reports
+# (auto-generated, not source code)
+# ========================
+metrics/
+
+# ========================
+# OS & Editor Junk
+# ========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+desktop.ini
