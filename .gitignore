@@ -25,14 +25,13 @@ dist/
 build/
 
 # ========================
-# Trained AI Model (large binary file)
-# Upload manually or use Git LFS
+# Trained AI Model
+# model/gru_model.h5 is committed (4MB - within GitHub limits)
 # ========================
-*.h5
+# *.h5  <- ENABLED: model file committed for Render deployment
 *.pkl
 *.npy
 *.joblib
-model/
 
 # ========================
 # Jupyter Notebooks Checkpoints
