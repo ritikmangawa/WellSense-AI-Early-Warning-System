@@ -1,9 +1,41 @@
 services:
+  # 1. Python AI Service
   - type: web
     name: wellsense-python-api
-    runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: api/Dockerfile
+    plan: free
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.9
+      - key: PORT
+        value: 10000
+
+  # 2. Node.js Backend
+  - type: web
+    name: wellsense-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: MONGO_URI
+        sync: false
+      - key: PYTHON_API_URL
+        value: https://wellsense-python-api.onrender.com
+
+  # 3. React Frontend
+  - type: static
+    name: wellsense-frontend
+    rootDir: fronted
+    buildCommand: npm install && npm run build
+    publishDir: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://wellsense-backend.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
