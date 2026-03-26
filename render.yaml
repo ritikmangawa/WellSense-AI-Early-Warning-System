@@ -27,7 +27,7 @@ services:
         value: https://wellsense-python-api.onrender.com
 
   # 3. React Frontend
-  - type: static
+  - type: static_site
     name: wellsense-frontend
     rootDir: fronted
     buildCommand: npm install && npm run build
