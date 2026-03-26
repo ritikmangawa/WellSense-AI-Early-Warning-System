@@ -1,0 +1,8 @@
+{
+  "name": "wellsense-system",
+  "private": true,
+  "scripts": {
+    "build": "cd fronted && npm install && npm run build",
+    "start": "cd backend && npm start"
+  }
+}
