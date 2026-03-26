@@ -25,7 +25,7 @@ export default function MentalHealthWidget() {
 
   const fetchHistory = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/history/user_123");
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/history/user_123`);
       if (response.ok) {
         const data = await response.json();
         const reversedHistory = data.history.reverse();
@@ -78,7 +78,7 @@ export default function MentalHealthWidget() {
     const fullSequence = Array(7).fill(todaysData);
 
     try {
-      const response = await fetch("http://localhost:5000/api/predict", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/predict`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: "user_123", sequence: fullSequence })
