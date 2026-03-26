@@ -10,7 +10,9 @@ from tensorflow.keras.models import load_model
 mental_health_router = APIRouter()
 
 # 1. Load the GRU brain we just trained!
-model = load_model("model/gru_model.h5")
+import os
+_BASE = os.path.dirname(os.path.abspath(__file__))
+model = load_model(os.path.join(_BASE, "..", "model", "gru_model.h5"))
 
 # 2. Define what data the frontend should send us
 class RiskRequest(BaseModel):
